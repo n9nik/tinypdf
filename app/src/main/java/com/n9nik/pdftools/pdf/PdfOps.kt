@@ -5,7 +5,6 @@ import android.graphics.Bitmap
 import android.net.Uri
 import com.tom_roush.pdfbox.cos.COSName
 import com.tom_roush.pdfbox.io.MemoryUsageSetting
-import com.tom_roush.pdfbox.multipdf.PDFMergerUtility
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.pdmodel.PDPageContentStream
 import com.tom_roush.pdfbox.pdmodel.PDResources
@@ -64,23 +63,21 @@ object PdfOps {
     /** Merge several PDFs into [out], preserving input order. Streams: never holds whole docs in RAM. */
     fun merge(context: Context, uris: List<Uri>, password: String?, out: OutputStream) {
         require(uris.size >= 2) { "Pick at least two PDFs to merge." }
-        val merger = PDFMergerUtility()
-        val streams = mutableListOf<java.io.InputStream>()
-        try {
+        // Scratch-backed destination; each source is opened through the
+        // password-aware open(...) so encrypted inputs work with the user's password.
+        PDDocument(memUsage()).use { dst ->
             for (uri in uris) {
-                val s = context.contentResolver.openInputStream(uri)
-                    ?: throw PdfException("Could not open a file.")
-                streams.add(s)
-                merger.addSource(s)
+                open(context, uri, password).use { src ->
+                    for (page in src.pages) {
+                        dst.importPage(page)
+                    }
+                }
             }
-            merger.destinationStream = out
             try {
-                merger.mergeDocuments(memUsage())
+                dst.save(out)
             } catch (e: Exception) {
                 throw asPdfException(e)
             }
-        } finally {
-            streams.forEach { runCatching { it.close() } }
         }
     }
 
@@ -98,7 +95,8 @@ object PdfOps {
         require(ranges.isNotEmpty()) { "Enter at least one page range." }
         open(context, uri, password).use { src ->
             ranges.forEachIndexed { index, range ->
-                PDDocument().use { dst ->
+                // Scratch-backed so large sources don't blow the heap.
+                PDDocument(memUsage()).use { dst ->
                     for (pageIndex in range) {
                         dst.importPage(src.getPage(pageIndex))
                     }
