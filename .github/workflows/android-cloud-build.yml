@@ -158,15 +158,15 @@ jobs:
           if [[ -f "app/upload-keystore.jks" ]]; then
             echo "Building SIGNED release AAB (secrets present)"
             ./gradlew --no-daemon --stacktrace bundleRelease \
-              -PADMOB_APP_ID=ca-app-pub-3940256099942544~3347511713 \
-              -PADMOB_BANNER_ID=ca-app-pub-3940256099942544/6300978111
+              -PADMOB_APP_ID=ca-app-pub-7487667838741597~5443352148 \
+              -PADMOB_BANNER_ID=ca-app-pub-7487667838741597/1544644745
           else
             echo "No keystore found - build should fail in CI due to missing secrets"
             echo "To build signed AAB, add GitHub Secrets:"
             echo "  UPLOAD_KEYSTORE_BASE64, UPLOAD_KEYSTORE_PASSWORD, UPLOAD_KEY_ALIAS, UPLOAD_KEY_PASSWORD"
             ./gradlew --no-daemon --stacktrace bundleRelease \
-              -PADMOB_APP_ID=ca-app-pub-3940256099942544~3347511713 \
-              -PADMOB_BANNER_ID=ca-app-pub-3940256099942544/6300978111
+              -PADMOB_APP_ID=ca-app-pub-7487667838741597~5443352148 \
+              -PADMOB_BANNER_ID=ca-app-pub-7487667838741597/1544644745
           fi
 
       - name: Create APK checksums
